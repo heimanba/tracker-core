@@ -1,0 +1,46 @@
+{
+  "name": "@serverless-devs/tracker-core",
+  "version": "0.0.3",
+  "description": "自定义监控探针",
+  "main": "dist/index.module.js",
+  "module": "dist/index.module.js",
+  "typings": "dist/modules/index.d.ts",
+  "scripts": {
+    "build": "npm-run-all -s clean build:ts build:js",
+    "build:ts": "tsc -b",
+    "watch": "tsc --watch",
+    "build:js": "rollup -c",
+    "clean": "rm -rf dist build tsconfig.tsbuildinfo",
+    "lint": "eslint \"*.js\" \"src/**/*.ts\" \"test/**/*.js\"",
+    "lint:fix": "eslint --fix \"*.js\" \"src/**/*.ts\" \"test/**/*.js\""
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@babel/core": "^7.13.10",
+    "@babel/preset-env": "^7.13.10",
+    "@typescript-eslint/eslint-plugin": "^4.17.0",
+    "@typescript-eslint/parser": "^4.17.0",
+    "babel-eslint": "^10.1.0",
+    "eslint": "^7.22.0",
+    "eslint-config-google": "^0.14.0",
+    "npm-run-all": "^4.1.5",
+    "rollup": "^2.41.2",
+    "rollup-plugin-babel": "^4.4.0",
+    "rollup-plugin-commonjs": "^10.1.0",
+    "rollup-plugin-node-resolve": "^5.2.0",
+    "rollup-plugin-terser": "^7.0.2",
+    "typescript": "^4.2.3"
+  },
+  "dependencies": {
+    "ajax-hook": "^2.0.9",
+    "js-sls-logger": "^2.0.2",
+    "query-string": "^7.1.1",
+    "ua-parser-js": "^1.0.2",
+    "url-parse": "^1.5.10"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  }
+}

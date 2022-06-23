@@ -6,6 +6,14 @@ export const pluginConfig = {
   spm: {
     enable: true,
   },
+  pv: {
+    enable: false,
+    config: {
+      filter(object) {
+        return object.hash;
+      },
+    },
+  },
   uv: {
     enable: true,
   },

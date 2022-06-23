@@ -52,7 +52,6 @@ const isDefaultPlugin = (key, value) => {
 };
 
 export const processPlugins = (send, plugins) => {
-  console.log("defaultPlugins", defaultPlugins);
   const initPlugins = mergePlugins(pluginConfig, plugins);
   for (const key in initPlugins) {
     const plugin = initPlugins[key];

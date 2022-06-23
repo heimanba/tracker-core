@@ -29,7 +29,8 @@ export interface ISendConfig {
 let initialized = false;
 
 export const send = (options: ISendConfig) => {
-  const { name, type = "event", ...params } = options;
+  const slsOptions = slsSendObject(options);
+  const { name, type = "event", ...params } = slsOptions;
   const slsInstance = window.CN_TRACKER.__slsInstance;
   if (!slsInstance.enable) return;
   if (

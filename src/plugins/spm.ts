@@ -24,7 +24,7 @@ const parseTrackerAttr = (attr: string) => {
 const htmlTreeToStr = function (rootNode) {
   if (!(rootNode && rootNode.nodeType === 1)) return "";
   let currentElem = rootNode || null;
-  const MAX_TRAVERSE_HEIGHT = 35;
+  const MAX_TRAVERSE_HEIGHT = 45;
   const out = [];
   let height = 0;
   let nextStr = [];
@@ -47,7 +47,7 @@ const htmlNodeToStr = function (htmlNode) {
   if (!htmlNode || typeof htmlNode.tagName !== "string") {
     return null;
   }
-  const attrWhitelist = ["type", "data-tracker"];
+  const attrWhitelist = ["type", "data-tracker", "data-wrapper"];
   for (i = 0; i < attrWhitelist.length; i++) {
     key = attrWhitelist[i];
     attr = htmlNode.getAttribute(key);
@@ -60,9 +60,9 @@ const htmlNodeToStr = function (htmlNode) {
 
 const getDateTrackerValues = (treeNode) => {
   const [latestNode, parentNode] = treeNode;
-  const dataTrckerValue = latestNode && latestNode.getAttribute("data-tracker");
-  const parentTrckerValue = parentNode && parentNode.getAttribute("data-tracker");
-  return [dataTrckerValue, parentTrckerValue];
+  const dataTrckerValue = latestNode.getAttribute("data-tracker") || latestNode.getAttribute("data-wrapper");
+  const wrapperValue = parentNode && parentNode.getAttribute("data-wrapper");
+  return [dataTrckerValue, wrapperValue];
 };
 
 const addBehavior = (behavior, send) => {

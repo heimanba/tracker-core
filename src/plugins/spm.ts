@@ -1,7 +1,6 @@
 import Url from "url-parse";
 import { getHost } from "../lib";
 
-
 const getRedirectUrl = (url) => {
   if (!url) return "";
   const { hostname, pathname } = new Url(url);
@@ -25,7 +24,7 @@ const parseTrackerAttr = (attr: string) => {
 const htmlTreeToStr = function (rootNode) {
   if (!(rootNode && rootNode.nodeType === 1)) return "";
   let currentElem = rootNode || null;
-  const MAX_TRAVERSE_HEIGHT = 20;
+  const MAX_TRAVERSE_HEIGHT = 35;
   const out = [];
   let height = 0;
   let nextStr = [];
@@ -59,26 +58,43 @@ const htmlNodeToStr = function (htmlNode) {
   return out;
 };
 
+const getDateTrackerValues = (treeNode) => {
+  const [latestNode, parentNode] = treeNode;
+  const dataTrckerValue = latestNode && latestNode.getAttribute("data-tracker");
+  const parentTrckerValue = parentNode && parentNode.getAttribute("data-tracker");
+  return [dataTrckerValue, parentTrckerValue];
+};
+
 const addBehavior = (behavior, send) => {
   const target = behavior.target;
+  const treeNode = behavior.treeNode;
   if (target.nodeName.toLocaleLowerCase() === "a") {
     const href = target.getAttribute("href");
-    const referrerHost = getHost(href);
-    if (href && referrerHost) {
-      send({
-        name: getRedirectUrl(href),
-        type: "redirect",
-      });
+    const redirectHost = getHost(href);
+    if (href && redirectHost) {
+      if (treeNode && treeNode.length > 0) {
+        const [dataTrckerValue] = getDateTrackerValues(behavior.treeNode);
+        send({
+          name: getRedirectUrl(href),
+          type: dataTrckerValue,
+        });
+      } else {
+        send({
+          name: getRedirectUrl(href),
+          type: "redirect",
+        });
+      }
     }
+    return;
   }
-  const treeNode = behavior.treeNode;
   if (treeNode && treeNode.length > 0) {
-    const latestNode = behavior.treeNode[0];
-    const dataTrckerValue = latestNode.getAttribute("data-tracker");
+    const [dataTrckerValue, parentTrckerValue] = getDateTrackerValues(
+      behavior.treeNode
+    );
     if (dataTrckerValue) {
       send({
         name: dataTrckerValue,
-        type: "event",
+        type: parentTrckerValue || "event",
         ...parseTrackerAttr(dataTrckerValue),
       });
     }
@@ -114,10 +130,13 @@ const bhEventHandler = (eventName: string, send) => {
 };
 
 export default (send) => {
-  const win = window;
-  if (!(win && win.document && win.document.addEventListener)) return;
-  win.document.addEventListener("click", bhEventHandler("click", send), false);
-  win.document.addEventListener(
+  if (!(window.document && window.document.addEventListener)) return;
+  window.document.addEventListener(
+    "click",
+    bhEventHandler("click", send),
+    false
+  );
+  window.document.addEventListener(
     "keypress",
     bhEventHandler("keypress", send),
     false

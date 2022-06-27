@@ -1,6 +1,6 @@
 {
   "name": "@serverless-devs/tracker-core",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "自定义监控探针",
   "main": "dist/index.module.js",
   "module": "dist/index.module.js",

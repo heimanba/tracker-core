@@ -58,9 +58,12 @@ const htmlNodeToStr = function (htmlNode) {
   return out;
 };
 
-const getDateTrackerValues = (treeNode) => {
+const getDateTrackerValues = (treeNode, isLink) => {
   const [latestNode, parentNode] = treeNode;
-  const dataTrckerValue = latestNode.getAttribute("data-tracker") || latestNode.getAttribute("data-wrapper");
+  const dataTrckerValue = isLink
+    ? latestNode.getAttribute("data-tracker") ||
+      latestNode.getAttribute("data-wrapper")
+    : latestNode.getAttribute("data-tracker");
   const wrapperValue = parentNode && parentNode.getAttribute("data-wrapper");
   return [dataTrckerValue, wrapperValue];
 };
@@ -73,7 +76,7 @@ const addBehavior = (behavior, send) => {
     const redirectHost = getHost(href);
     if (href && redirectHost) {
       if (treeNode && treeNode.length > 0) {
-        const [dataTrckerValue] = getDateTrackerValues(behavior.treeNode);
+        const [dataTrckerValue] = getDateTrackerValues(behavior.treeNode, true);
         send({
           name: getRedirectUrl(href),
           type: dataTrckerValue,
@@ -88,8 +91,10 @@ const addBehavior = (behavior, send) => {
     return;
   }
   if (treeNode && treeNode.length > 0) {
+    // 正常节点标准是 data-tracker/data-wrapper
     const [dataTrckerValue, parentTrckerValue] = getDateTrackerValues(
-      behavior.treeNode
+      behavior.treeNode,
+      false
     );
     if (dataTrckerValue) {
       send({

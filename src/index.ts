@@ -1,9 +1,9 @@
 import SlsWebLogger from "js-sls-logger";
 import { slsSendObject, processPlugins } from "./lib";
-
 declare global {
   interface Window {
     CN_TRACKER: {
+      version?: string;
       init?: any;
       send?: (options: ISendConfig, params) => void;
       __slsInstance?: any;
@@ -27,6 +27,9 @@ export interface ISendConfig {
 }
 
 let initialized = false;
+window.CN_TRACKER = window.CN_TRACKER || {
+  version: "0.1.2",
+};
 
 export const send = (options: ISendConfig) => {
   const slsOptions = slsSendObject(options);
@@ -81,7 +84,7 @@ export const init = (productName: string, options: IInitConfig = {}) => {
     primaryKey,
     initOptions: initOptions || {},
   });
-  window.CN_TRACKER = window.CN_TRACKER || {};
+
   window.CN_TRACKER.__slsInstance = slsLogger;
   window.CN_TRACKER.send = send;
 

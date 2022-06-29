@@ -81,7 +81,7 @@ const _getDateTrackerValues = (treeNode, isLink) => {
   return [dataTrckerValue, wrapperValue];
 };
 
-const getHrefTracker = (node, treeAttrNode, send) => {
+const _getHrefTracker = (node, treeAttrNode, defaultTrackerType, send) => {
   const href = node.getAttribute("href");
   const redirectHost = getHost(href);
   if (href && redirectHost) {
@@ -89,20 +89,21 @@ const getHrefTracker = (node, treeAttrNode, send) => {
       const [dataTrckerValue] = _getDateTrackerValues(treeAttrNode, true);
       send({
         name: getRedirectUrl(href),
-        type: dataTrckerValue,
+        type: dataTrckerValue || defaultTrackerType,
       });
     } else {
       send({
         name: getRedirectUrl(href),
-        type: "redirect",
+        type: defaultTrackerType || "redirect",
       });
     }
   }
 };
 
-const addBehavior = (behavior, send) => {
+const addBehavior = (behavior, send, getTrackerType) => {
   const target = behavior.target;
   const { attr: treeAttrNode, tag: treeTagNode } = behavior.treeNode;
+  const defaultTrackerType = getTrackerType();
   //  点击图片
   if (target.nodeName.toLocaleLowerCase() === "img") {
     const [imgNode, aNode] = treeTagNode;
@@ -112,12 +113,12 @@ const addBehavior = (behavior, send) => {
       imgNode.tagName.toLowerCase() === "img" &&
       aNode.tagName.toLowerCase() === "a"
     ) {
-      return getHrefTracker(aNode, treeAttrNode, send);
+      return _getHrefTracker(aNode, treeAttrNode, defaultTrackerType, send);
     }
   }
   //  点击a标签
   if (target.nodeName.toLocaleLowerCase() === "a") {
-    return getHrefTracker(target, treeAttrNode, send);
+    return _getHrefTracker(target, treeAttrNode, defaultTrackerType, send);
   }
   if (treeAttrNode && treeAttrNode.length > 0) {
     // 正常节点标准是 data-tracker/data-wrapper
@@ -128,14 +129,14 @@ const addBehavior = (behavior, send) => {
     if (dataTrckerValue) {
       send({
         name: dataTrckerValue,
-        type: parentTrckerValue || "event",
+        type: parentTrckerValue || defaultTrackerType || "event",
         ...parseTrackerAttr(dataTrckerValue),
       });
     }
   }
 };
 
-const bhEventHandler = (eventName: string, send) => {
+const bhEventHandler = (eventName: string, send, getTrackerType) => {
   let lastEvent = null;
   return function (event) {
     if (!event || event === lastEvent) return;
@@ -156,23 +157,29 @@ const bhEventHandler = (eventName: string, send) => {
       timestamp: Date.now(),
     };
     if (eventName === "click") {
-      addBehavior(behavior, send);
+      addBehavior(behavior, send, getTrackerType);
     } else if (eventName === "keypress") {
-      addBehavior(behavior, send);
+      addBehavior(behavior, send, getTrackerType);
     }
   };
 };
 
-export default (send) => {
+export default (
+  send,
+  config: {
+    getTrackerType;
+  }
+) => {
+  const { getTrackerType = () => null } = config || {};
   if (!(window.document && window.document.addEventListener)) return;
   window.document.addEventListener(
     "click",
-    bhEventHandler("click", send),
+    bhEventHandler("click", send, getTrackerType),
     false
   );
   window.document.addEventListener(
     "keypress",
-    bhEventHandler("keypress", send),
+    bhEventHandler("keypress", send, getTrackerType),
     false
   );
 };

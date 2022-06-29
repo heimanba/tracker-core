@@ -28,7 +28,7 @@ export interface ISendConfig {
 
 let initialized = false;
 window.CN_TRACKER = window.CN_TRACKER || {
-  version: "0.1.2",
+  version: "0.1.4",
 };
 
 export const send = (options: ISendConfig) => {

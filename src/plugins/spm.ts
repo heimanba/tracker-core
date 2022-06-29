@@ -3,8 +3,8 @@ import { getHost } from "../lib";
 
 const getRedirectUrl = (url) => {
   if (!url) return "";
-  const { hostname, pathname } = new Url(url);
-  return `${hostname}${pathname}`;
+  const { hostname, pathname, hash } = new Url(url);
+  return `${hostname}${pathname}${hash}`;
 };
 
 const parseTrackerAttr = (attr: string) => {
@@ -55,7 +55,7 @@ const htmlNodeToStr = function (htmlNode, isAttr) {
 
   if (isAttr) {
     for (let i = 0; i < attrWhitelist.length; i++) {
-      let attr = htmlNode.getAttribute(attrWhitelist[i]);
+      const attr = htmlNode.getAttribute(attrWhitelist[i]);
       if (typeof attr === "string") {
         out = htmlNode;
       }

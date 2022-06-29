@@ -25,13 +25,19 @@ const htmlTreeToStr = function (rootNode) {
   if (!(rootNode && rootNode.nodeType === 1)) return "";
   let currentElem = rootNode || null;
   const MAX_TRAVERSE_HEIGHT = 45;
-  const out = [];
+  const out = {
+    attr: [],
+    tag: [],
+  };
   let height = 0;
-  let nextStr = [];
   while (currentElem && height++ < MAX_TRAVERSE_HEIGHT) {
-    nextStr = htmlNodeToStr(currentElem);
-    if (nextStr) {
-      out.push(nextStr);
+    const nextAttrStr = htmlNodeToStr(currentElem, true);
+    const nextTagStr = htmlNodeToStr(currentElem, false);
+    if (nextAttrStr) {
+      out.attr.push(nextAttrStr);
+    }
+    if (nextTagStr) {
+      out.tag.push(nextTagStr);
     }
     currentElem = currentElem.parentNode;
   }
@@ -39,26 +45,33 @@ const htmlTreeToStr = function (rootNode) {
   return out;
 };
 
-const htmlNodeToStr = function (htmlNode) {
+const htmlNodeToStr = function (htmlNode, isAttr) {
   let out = null;
-  let key;
-  let attr;
-  let i;
   if (!htmlNode || typeof htmlNode.tagName !== "string") {
     return null;
   }
+  const tagWhitelist = ["img", "a"];
   const attrWhitelist = ["type", "data-tracker", "data-wrapper"];
-  for (i = 0; i < attrWhitelist.length; i++) {
-    key = attrWhitelist[i];
-    attr = htmlNode.getAttribute(key);
-    if (typeof attr === "string") {
-      out = htmlNode;
+
+  if (isAttr) {
+    for (let i = 0; i < attrWhitelist.length; i++) {
+      let attr = htmlNode.getAttribute(attrWhitelist[i]);
+      if (typeof attr === "string") {
+        out = htmlNode;
+      }
+    }
+  } else {
+    for (let i = 0; i < tagWhitelist.length; i++) {
+      if (htmlNode.tagName.toLowerCase() === tagWhitelist[i]) {
+        return htmlNode;
+      }
     }
   }
+
   return out;
 };
 
-const getDateTrackerValues = (treeNode, isLink) => {
+const _getDateTrackerValues = (treeNode, isLink) => {
   const [latestNode, parentNode] = treeNode;
   const dataTrckerValue = isLink
     ? latestNode.getAttribute("data-tracker") ||
@@ -68,32 +81,48 @@ const getDateTrackerValues = (treeNode, isLink) => {
   return [dataTrckerValue, wrapperValue];
 };
 
+const getHrefTracker = (node, treeAttrNode, send) => {
+  const href = node.getAttribute("href");
+  const redirectHost = getHost(href);
+  if (href && redirectHost) {
+    if (treeAttrNode && treeAttrNode.length > 0) {
+      const [dataTrckerValue] = _getDateTrackerValues(treeAttrNode, true);
+      send({
+        name: getRedirectUrl(href),
+        type: dataTrckerValue,
+      });
+    } else {
+      send({
+        name: getRedirectUrl(href),
+        type: "redirect",
+      });
+    }
+  }
+};
+
 const addBehavior = (behavior, send) => {
   const target = behavior.target;
-  const treeNode = behavior.treeNode;
-  if (target.nodeName.toLocaleLowerCase() === "a") {
-    const href = target.getAttribute("href");
-    const redirectHost = getHost(href);
-    if (href && redirectHost) {
-      if (treeNode && treeNode.length > 0) {
-        const [dataTrckerValue] = getDateTrackerValues(behavior.treeNode, true);
-        send({
-          name: getRedirectUrl(href),
-          type: dataTrckerValue,
-        });
-      } else {
-        send({
-          name: getRedirectUrl(href),
-          type: "redirect",
-        });
-      }
+  const { attr: treeAttrNode, tag: treeTagNode } = behavior.treeNode;
+  //  点击图片
+  if (target.nodeName.toLocaleLowerCase() === "img") {
+    const [imgNode, aNode] = treeTagNode;
+    if (
+      imgNode &&
+      aNode &&
+      imgNode.tagName.toLowerCase() === "img" &&
+      aNode.tagName.toLowerCase() === "a"
+    ) {
+      return getHrefTracker(aNode, treeAttrNode, send);
     }
-    return;
   }
-  if (treeNode && treeNode.length > 0) {
+  //  点击a标签
+  if (target.nodeName.toLocaleLowerCase() === "a") {
+    return getHrefTracker(target, treeAttrNode, send);
+  }
+  if (treeAttrNode && treeAttrNode.length > 0) {
     // 正常节点标准是 data-tracker/data-wrapper
-    const [dataTrckerValue, parentTrckerValue] = getDateTrackerValues(
-      behavior.treeNode,
+    const [dataTrckerValue, parentTrckerValue] = _getDateTrackerValues(
+      treeAttrNode,
       false
     );
     if (dataTrckerValue) {

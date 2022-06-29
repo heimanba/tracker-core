@@ -19,7 +19,7 @@ const supportsHistory = () => {
 
 export function onHashChange(callback) {
   window.addEventListener("hashchange", () => {
-    callback(new Url(window?.location?.href));
+    callback(new Url(window.location.href));
   });
 }
 
@@ -31,7 +31,7 @@ export function onHistoryChange(callback) {
   //   callback(window.location.href);
   // });
 
-  const originPushState = window?.history?.pushState;
+  const originPushState = window.history.pushState;
   if (originPushState) {
     history.pushState = function () {
       originPushState.apply(this, arguments);
@@ -42,7 +42,7 @@ export function onHistoryChange(callback) {
     };
   }
 
-  const originReplaceState = window?.history?.replaceState;
+  const originReplaceState = window.history.replaceState;
   if (originReplaceState) {
     history.replaceState = function () {
       originReplaceState.apply(this, arguments);

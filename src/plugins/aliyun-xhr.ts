@@ -62,7 +62,7 @@ export default (send) => {
       const url = formatExposeUrl(err.config.url);
       if (isAliyunCsUrl(url) || !url) return handler.next(err);
       const errorObj: any = err;
-      const errorMsg = errorObj?.error?.message;
+      const errorMsg = errorObj.error ? errorObj.error.message : null;
       if (errorMsg) {
         send({
           name: url,

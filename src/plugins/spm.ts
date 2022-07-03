@@ -8,6 +8,7 @@ const getRedirectUrl = (url) => {
 };
 
 const parseTrackerAttr = (attr: string) => {
+  if (!attr) return {};
   const attrList = attr.split("&");
   const attrMap = {};
   attrList.forEach((item) => {
@@ -32,12 +33,12 @@ const htmlTreeToStr = function (rootNode) {
   let height = 0;
   while (currentElem && height++ < MAX_TRAVERSE_HEIGHT) {
     const nextAttrStr = htmlNodeToStr(currentElem, true);
-    const nextTagStr = htmlNodeToStr(currentElem, false);
+    const nextALinkStr = htmlNodeToStr(currentElem, false);
     if (nextAttrStr) {
       out.attr.push(nextAttrStr);
     }
-    if (nextTagStr) {
-      out.tag.push(nextTagStr);
+    if (nextALinkStr) {
+      out.tag.push(nextALinkStr);
     }
     currentElem = currentElem.parentNode;
   }
@@ -50,8 +51,7 @@ const htmlNodeToStr = function (htmlNode, isAttr) {
   if (!htmlNode || typeof htmlNode.tagName !== "string") {
     return null;
   }
-  const tagWhitelist = ["img", "a"];
-  const attrWhitelist = ["type", "data-tracker", "data-wrapper"];
+  const attrWhitelist = ["data-tracker", "data-wrapper"];
 
   if (isAttr) {
     for (let i = 0; i < attrWhitelist.length; i++) {
@@ -61,78 +61,65 @@ const htmlNodeToStr = function (htmlNode, isAttr) {
       }
     }
   } else {
-    for (let i = 0; i < tagWhitelist.length; i++) {
-      if (htmlNode.tagName.toLowerCase() === tagWhitelist[i]) {
-        return htmlNode;
-      }
+    if (htmlNode.tagName.toLowerCase() === "a") {
+      return htmlNode;
     }
   }
 
   return out;
 };
 
-const _getDateTrackerValues = (treeNode, isLink) => {
+const _getDateTrackerValues = (treeNode, aNode, defaultTrackerType) => {
   const [latestNode, parentNode] = treeNode;
-  const dataTrckerValue = isLink
-    ? latestNode.getAttribute("data-tracker") ||
-      latestNode.getAttribute("data-wrapper")
-    : latestNode.getAttribute("data-tracker");
-  const wrapperValue = parentNode && parentNode.getAttribute("data-wrapper");
-  return [dataTrckerValue, wrapperValue];
-};
+  const latestTrckerValue =
+    latestNode && latestNode.getAttribute("data-tracker");
+  const latestWrapperValue =
+    latestNode && latestNode.getAttribute("data-wrapper");
+  const parentWrapperValue =
+    parentNode && parentNode.getAttribute("data-wrapper");
 
-const _getHrefTracker = (node, treeAttrNode, defaultTrackerType, send) => {
-  const href = node.getAttribute("href");
-  const redirectHost = getHost(href);
-  if (href && redirectHost) {
-    if (treeAttrNode && treeAttrNode.length > 0) {
-      const [dataTrckerValue] = _getDateTrackerValues(treeAttrNode, true);
-      send({
+  if (latestTrckerValue) {
+    return {
+      name: latestTrckerValue,
+      type: parentWrapperValue,
+      ...parseTrackerAttr(latestTrckerValue),
+    };
+  }
+
+  if (aNode) {
+    const href = aNode.getAttribute("href");
+    const redirectHost = getHost(href);
+    //  外链跳转，比如http://www.baidu.com
+    if (redirectHost) {
+      return {
         name: getRedirectUrl(href),
-        type: dataTrckerValue || defaultTrackerType,
-      });
-    } else {
-      send({
-        name: getRedirectUrl(href),
-        type: defaultTrackerType || "redirect",
-      });
+        type: latestWrapperValue || defaultTrackerType || "redirect",
+      };
+    }
+  } else {
+    const tracker = {
+      name: latestTrckerValue,
+      type: parentWrapperValue,
+      ...parseTrackerAttr(latestTrckerValue),
+    };
+    if (tracker.name) {
+      return tracker;
     }
   }
+  return null;
 };
 
 const addBehavior = (behavior, send, getTrackerType) => {
-  const target = behavior.target;
   const { attr: treeAttrNode, tag: treeTagNode } = behavior.treeNode;
-  const defaultTrackerType = getTrackerType();
-  //  点击图片
-  if (target.nodeName.toLocaleLowerCase() === "img") {
-    const [imgNode, aNode] = treeTagNode;
-    if (
-      imgNode &&
-      aNode &&
-      imgNode.tagName.toLowerCase() === "img" &&
-      aNode.tagName.toLowerCase() === "a"
-    ) {
-      return _getHrefTracker(aNode, treeAttrNode, defaultTrackerType, send);
-    }
-  }
-  //  点击a标签
-  if (target.nodeName.toLocaleLowerCase() === "a") {
-    return _getHrefTracker(target, treeAttrNode, defaultTrackerType, send);
-  }
-  if (treeAttrNode && treeAttrNode.length > 0) {
-    // 正常节点标准是 data-tracker/data-wrapper
-    const [dataTrckerValue, parentTrckerValue] = _getDateTrackerValues(
-      treeAttrNode,
-      false
-    );
-    if (dataTrckerValue) {
-      send({
-        name: dataTrckerValue,
-        type: parentTrckerValue || defaultTrackerType || "event",
-        ...parseTrackerAttr(dataTrckerValue),
-      });
-    }
+  const defaultTrackerType = getTrackerType() || null;
+  const [aNode] = treeTagNode;
+  const trackerObject = _getDateTrackerValues(
+    treeAttrNode,
+    aNode,
+    defaultTrackerType
+  );
+  if(trackerObject) {
+    send(trackerObject);
   }
 };
 

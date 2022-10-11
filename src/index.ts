@@ -5,7 +5,7 @@ declare global {
     CN_TRACKER: {
       version?: string;
       init?: any;
-      send?: (options: ISendConfig, params) => void;
+      send?: (options: ISendConfig, params: ParamsType) => void;
       __slsInstance?: any;
     };
   }
@@ -26,14 +26,18 @@ export interface ISendConfig {
   [key: string]: any;
 }
 
+export interface ParamsType {
+  [key: string]: any;
+}
+
 let initialized = false;
 window.CN_TRACKER = window.CN_TRACKER || {
   version: "0.1.5",
 };
 
-export const send = (options: ISendConfig) => {
+export const send = (options: ISendConfig, params: ParamsType) => {
   const slsOptions = slsSendObject(options);
-  const { name, type = "event", ...params } = slsOptions;
+  const { name, type = "event"} = slsOptions;
   const slsInstance = window.CN_TRACKER.__slsInstance;
   if (!slsInstance.enable) return;
   if (
